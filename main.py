@@ -42,13 +42,34 @@ for index in xrange(len(article)-1):
         
         G.add_edge( previous_word, next_word )
 
-#G.add_weighted_edges_from([(1,2,0.125),(1,3,0.75),(2,4,1.2),(3,4,0.375)])
+def most_important(G):
+    """ returns a copy of G with
+    the most important nodes
+    according to the pagerank """ 
 
-"""
-print "drawing..."
-nx.draw(G)
-print "save plot..."
-plt.savefig("path.png")
-"""
+    ranking = nx.betweenness_centrality(G).items()
+    print ranking
+    r = [x[1] for x in ranking]
+    m = sum(r)/len(r) # mean centrality
+    t = m*3 # threshold, we keep only the nodes with 3 times the mean
+    Gt = G.copy()
+    for k, v in ranking:
+        if v < t:
+            Gt.remove_node(k)
+    return Gt
 
-#print G.nodes()
+Gt = most_important(G) # trimming
+
+from pylab import show
+
+pos = nx.spring_layout(G)
+
+nx.draw_networkx_nodes(G,pos,node_color='b',alpha=0.2,node_size=8)
+nx.draw_networkx_edges(G,pos,alpha=0.1)
+
+nx.draw_networkx_nodes(Gt,pos,node_color='r',alpha=0.4,node_size=254)
+
+nx.draw_networkx_labels(Gt,pos,font_size=12,font_color='b')
+
+show()
+
