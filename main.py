@@ -5,6 +5,7 @@ import numpy as np
 import networkx as nx
 #import matplotlib.pyplot as plt
 from nltk.stem.wordnet import WordNetLemmatizer
+import nltk.data
 
 ### Functions
 
@@ -38,43 +39,46 @@ def pagerank(G):
             print v
     return Gt
 
+def use_lemmatizer():
+    lmtzr = WordNetLemmatizer()
+    """
+    article_tokens[ index ] = lmtzr.lemmatize( article_tokens[ index ] )
+
+    if article_tokens[index] != lmtzr.lemmatize( article_tokens[ index ] ):
+        print article_tokens[index], lmtzr.lemmatize( article_tokens[ index ] )
+    """
+
 ### Load files
 
 with open('common_words.txt', 'r') as f:
     stopwords = f.read().split()
 
 with open('pulman.txt', 'r') as f:
-    article = f.read().split()
+    article = f.read().strip()
+    
+    article = article[0:10000]
+
+    article_tokens = article.split()
+
 
 G = nx.Graph()
 
-lmtzr = WordNetLemmatizer()
-
-article = article[0:500]
-
 previous_word = ""
 
-for index in xrange(len(article)-1):
+for index in xrange(len(article_tokens)-1):
     # remove punctation
-    article[ index ] = article[ index ].translate(string.maketrans("",""), string.punctuation)
-    article[ index ] = article[ index ].lower()
-
-    """
-    article[ index ] = lmtzr.lemmatize( article[ index ] )
-
-    if article[index] != lmtzr.lemmatize( article[ index ] ):
-        print article[index], lmtzr.lemmatize( article[ index ] )
-    """
+    article_tokens[ index ] = article_tokens[ index ].translate(string.maketrans("",""), string.punctuation)
+    article_tokens[ index ] = article_tokens[ index ].lower()
 
     if index == 0:
-        current_word = article[ index ]
-        next_word = article[ index + 1 ]
+        current_word = article_tokens[ index ]
+        next_word = article_tokens[ index + 1 ]
 
         G.add_edge( current_word, next_word )
     else:
         previous_word = current_word
         current_word = next_word
-        next_word = article[ index + 1 ]
+        next_word = article_tokens[ index + 1 ]
 
         #print previous_word, current_word, next_word
 
@@ -110,4 +114,24 @@ for r in ranked_top_100_without_stopwords:
 
 # @TODO: Select and print most important sentences
 
+# tokenize sentences
+sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+sentences = sentence_detector.tokenize( article )
 
+sentence_points = [ [i,0] for i in xrange( len( sentences ) ) ]
+
+for sen in xrange(len(sentences)):
+    for word_and_rank in ranked_top_100_without_stopwords:
+        word, rank = word_and_rank
+
+        if word in sentences[sen]:
+            #sentence_points[ sen ][0] += 1
+            sentence_points[ sen ][1] += 1
+
+sorted_sentence_points = sorted(sentence_points, key=lambda r: r[1], reverse=True)
+
+N = 5
+
+if len(sorted_sentence_points) > N:
+    for i in xrange(N):
+        print sentences[ i ]
