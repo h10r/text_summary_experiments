@@ -1,54 +1,137 @@
 # -*- coding: utf-8 -*-
 
 import string
-import nltk
-from nltk.stem import WordNetLemmatizer
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+from nltk.stem.wordnet import WordNetLemmatizer
+import nltk.data
+
+### Functions
+
+def most_important(G):
+    """ returns a copy of G with
+    the most important nodes
+    according to the pagerank """ 
+
+    ranking = nx.betweenness_centrality(G).items()
+    ranking = sorted(ranking, key=lambda r: r[1], reverse=True)
+
+    return ranking
+
+def pagerank(G):
+    """ returns a copy of G with
+    the most important nodes
+    according to the pagerank """ 
+
+    ranking = nx.betweenness_centrality(G).items()
+    #print ranking
+    
+    r = [x[1] for x in ranking]
+    m = sum(r)/len(r) # mean centrality
+    t = m*3 # threshold, we keep only the nodes with 3 times the mean
+
+    Gt = G.copy()
+
+    for k, v in ranking:
+        if v < t:
+            Gt.remove_node(k)
+            print v
+    return Gt
+
+def use_lemmatizer():
+    lmtzr = WordNetLemmatizer()
+    """
+    article_tokens[ index ] = lmtzr.lemmatize( article_tokens[ index ] )
+
+    if article_tokens[index] != lmtzr.lemmatize( article_tokens[ index ] ):
+        print article_tokens[index], lmtzr.lemmatize( article_tokens[ index ] )
+    """
+
+### Load files
+
+with open('common_words.txt', 'r') as f:
+    stopwords = f.read().split()
 
 with open('pulman.txt', 'r') as f:
-    article = f.read().split()
+    article = f.read().strip()
+    
+    article = article[0:10000]
 
-STOP_WORDS = nltk.corpus.stopwords.words('english') + list( string.punctuation )
+    article_tokens = article.split()
 
-#tokens = [i.decode('utf-8') for i in nltk.word_tokenize( article.lower() ) if i not in STOP_WORDS]
 
 G = nx.Graph()
 
-# remove stop words and punctation
-for index in xrange(len(article)):
-    article[ index ] = article[ index ].translate(string.maketrans("",""), string.punctuation).lower()
+previous_word = ""
 
-article = article[0:300]
+for index in xrange(len(article_tokens)-1):
+    # remove punctation
+    article_tokens[ index ] = article_tokens[ index ].translate(string.maketrans("",""), string.punctuation)
+    article_tokens[ index ] = article_tokens[ index ].lower()
 
-# add nodes
+    if index == 0:
+        current_word = article_tokens[ index ]
+        next_word = article_tokens[ index + 1 ]
 
-previous_ngram = ""
-
-for ngram_index in xrange(len(article)-3):
-    if ngram_index == 0:
-        ngram = "_".join( article[ngram_index: ngram_index + 3] )
-        next_ngram = "_".join( article[ngram_index + 1 : ngram_index + 1 + 3] )
-
-        G.add_node( ngram )
-        G.add_node( next_ngram )
+        G.add_edge( current_word, next_word )
     else:
-        previous_ngram = ngram
-        ngram = next_ngram
-        next_ngram = "_".join( article[ngram_index + 1 : ngram_index + 1 + 3] )
+        previous_word = current_word
+        current_word = next_word
+        next_word = article_tokens[ index + 1 ]
 
-        G.add_node( next_ngram )
+        #print previous_word, current_word, next_word
 
-        G.add_edge( previous_ngram, ngram )
-        G.add_edge( ngram, next_ngram )
+        G.add_edge( previous_word, current_word )
+        G.add_edge( current_word, next_word )
+        
+        G.add_edge( previous_word, next_word )
 
-    #G.add_weighted_edges_from([(1,2,0.125),(1,3,0.75),(2,4,1.2),(3,4,0.375)])
+ranked = most_important(G)
 
+ranked_top_100_without_stopwords = []
 
-print "drawing..."
-nx.draw(G)
-print "save plot..."
-plt.savefig("path.png")
+count = 0
+index = 0
+max_index = len( ranked )
 
-#print G.nodes()
+while count <= 42:
+    word,ranking = ranked[ index ]
+
+    if not word in stopwords:
+        ranked_top_100_without_stopwords.append( (word, ranking) )
+        count += 1
+
+    index += 1
+
+    if index >= max_index:
+        break
+
+for r in ranked_top_100_without_stopwords:
+    print r
+
+# @TODO: Add word2vec weights
+
+# @TODO: Select and print most important sentences
+
+# tokenize sentences
+sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+sentences = sentence_detector.tokenize( article )
+
+sentence_points = [ [i,0] for i in xrange( len( sentences ) ) ]
+
+for sen in xrange(len(sentences)):
+    for word_and_rank in ranked_top_100_without_stopwords:
+        word, rank = word_and_rank
+
+        if word in sentences[sen]:
+            #sentence_points[ sen ][0] += 1
+            sentence_points[ sen ][1] += 1
+
+sorted_sentence_points = sorted(sentence_points, key=lambda r: r[1], reverse=True)
+
+N = 5
+
+if len(sorted_sentence_points) > N:
+    for i in xrange(N):
+        print sentences[ i ]
