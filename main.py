@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import time
 import string
 import numpy as np
 import networkx as nx
@@ -53,18 +54,21 @@ def use_lemmatizer():
 
 ### Load files
 
-with open('common_words.txt', 'r') as f:
+with open('data/common_words.txt', 'r') as f:
     stopwords = f.read().split()
 
-with open('pulman.txt', 'r') as f:
+with open('data/input/pulman2.txt', 'r') as f:
     article = f.read().strip()
     
-    article = article[0:10000]
+    #article = article[0:10000]
 
     article_tokens = article.split()
 
 
 G = nx.Graph()
+
+print "*** Generate graph"
+ttime = time.clock()
 
 previous_word = ""
 
@@ -90,7 +94,15 @@ for index in xrange(len(article_tokens)-1):
         
         G.add_edge( previous_word, next_word )
 
+print "*** => ", abs(ttime-time.clock())
+print "*** Rank words"
+ttime = time.clock()
+
 ranked = most_important(G)
+
+print "*** => ", abs(ttime-time.clock())
+print "*** Get top 100 words without stopwords" 
+ttime = time.clock()
 
 ranked_top_100_without_stopwords = []
 
@@ -114,6 +126,10 @@ while count <= NUMBER_OF_RANKED_WORDS:
 
 # @TODO: Select and print most important sentences
 
+print "*** => ", abs(ttime-time.clock())
+print "*** Tokenize sentences"
+ttime = time.clock()
+
 # tokenize sentences
 sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
 sentences = sentence_detector.tokenize( article )
@@ -134,6 +150,10 @@ sorted_sentence_points = sorted(sentence_points, key=lambda r: r[1], reverse=Tru
 for r in ranked_top_100_without_stopwords:
     print r
 """
+
+print "*** => ", abs(ttime-time.clock())
+print "*** Print best sentences"
+ttime = time.clock()
 
 if len(sorted_sentence_points) >= NUMBER_OF_OUTPUT_SENTENCES:
     for i in xrange(NUMBER_OF_OUTPUT_SENTENCES):
