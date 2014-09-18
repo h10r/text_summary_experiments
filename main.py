@@ -7,6 +7,9 @@ import networkx as nx
 from nltk.stem.wordnet import WordNetLemmatizer
 import nltk.data
 
+NUMBER_OF_RANKED_WORDS = 42
+NUMBER_OF_OUTPUT_SENTENCES = 5
+
 ### Functions
 
 def most_important(G):
@@ -95,7 +98,7 @@ count = 0
 index = 0
 max_index = len( ranked )
 
-while count <= 42:
+while count <= NUMBER_OF_RANKED_WORDS:
     word,ranking = ranked[ index ]
 
     if not word in stopwords:
@@ -106,9 +109,6 @@ while count <= 42:
 
     if index >= max_index:
         break
-
-for r in ranked_top_100_without_stopwords:
-    print r
 
 # @TODO: Add word2vec weights
 
@@ -130,8 +130,11 @@ for sen in xrange(len(sentences)):
 
 sorted_sentence_points = sorted(sentence_points, key=lambda r: r[1], reverse=True)
 
-N = 5
+"""
+for r in ranked_top_100_without_stopwords:
+    print r
+"""
 
-if len(sorted_sentence_points) > N:
-    for i in xrange(N):
+if len(sorted_sentence_points) >= NUMBER_OF_OUTPUT_SENTENCES:
+    for i in xrange(NUMBER_OF_OUTPUT_SENTENCES):
         print sentences[ i ]
