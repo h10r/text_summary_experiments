@@ -4,6 +4,7 @@ import time
 import string
 import numpy as np
 import networkx as nx
+from gensim.models import word2vec
 #import matplotlib.pyplot as plt
 from nltk.stem.wordnet import WordNetLemmatizer
 import nltk.data
@@ -33,7 +34,7 @@ def pagerank(G):
     
     r = [x[1] for x in ranking]
     m = sum(r)/len(r) # mean centrality
-    t = m*3 # threshold, we keep only the nodes with 3 times the mean
+    t = m * 3 # threshold, we keep only the nodes with 3 times the mean
 
     Gt = G.copy()
 
@@ -42,6 +43,32 @@ def pagerank(G):
             Gt.remove_node(k)
             print v
     return Gt
+
+model = word2vec.Word2Vec.load_word2vec_format('data/vectors.bin', binary=True)
+
+def calc_weight(v1, v2):
+    if not v1 in model or not v2 in model:
+        return 0.0
+    else:
+        """ calculate the real weight """
+        return word2vec_cosine_similarity( v1, v2 )
+
+    return 1.0
+
+def word2vec_cosine_similarity(v1, v2):
+    """
+    Compute cosine similarity between two words.
+
+    Example::
+
+      >>> trained_model.similarity('woman', 'man')
+      0.73723527
+
+      >>> trained_model.similarity('woman', 'woman')
+      1.0
+
+    """
+    return np.dot( model[ v1 ], model[ v2 ].T ) / np.linalg.norm(model[ v1 ]) / np.linalg.norm(model[ v2 ])
 
 def use_lemmatizer():
     lmtzr = WordNetLemmatizer()
@@ -64,7 +91,6 @@ with open('data/input/pulman2.txt', 'r') as f:
 
     article_tokens = article.split()
 
-
 G = nx.Graph()
 
 print "*** Generate graph"
@@ -81,7 +107,7 @@ for index in xrange(len(article_tokens)-1):
         current_word = article_tokens[ index ]
         next_word = article_tokens[ index + 1 ]
 
-        G.add_edge( current_word, next_word )
+        G.add_edge( current_word, next_word, weight = calc_weight(current_word, next_word) )
     else:
         previous_word = current_word
         current_word = next_word
@@ -89,10 +115,10 @@ for index in xrange(len(article_tokens)-1):
 
         #print previous_word, current_word, next_word
 
-        G.add_edge( previous_word, current_word )
-        G.add_edge( current_word, next_word )
+        G.add_edge( previous_word, current_word, weight = calc_weight(previous_word, current_word)  )
+        G.add_edge( current_word, next_word, weight = calc_weight(current_word, next_word)  )
         
-        G.add_edge( previous_word, next_word )
+        G.add_edge( previous_word, next_word, weight = calc_weight(previous_word, next_word)  )
 
 print "*** => ", abs(ttime-time.clock())
 print "*** Rank words"
@@ -122,10 +148,6 @@ while count <= NUMBER_OF_RANKED_WORDS:
     if index >= max_index:
         break
 
-# @TODO: Add word2vec weights
-
-# @TODO: Select and print most important sentences
-
 print "*** => ", abs(ttime-time.clock())
 print "*** Tokenize sentences"
 ttime = time.clock()
@@ -146,11 +168,6 @@ for sen in xrange(len(sentences)):
 
 sorted_sentence_points = sorted(sentence_points, key=lambda r: r[1], reverse=True)
 
-"""
-for r in ranked_top_100_without_stopwords:
-    print r
-"""
-
 print "*** => ", abs(ttime-time.clock())
 print "*** Print best sentences"
 ttime = time.clock()
@@ -158,3 +175,4 @@ ttime = time.clock()
 if len(sorted_sentence_points) >= NUMBER_OF_OUTPUT_SENTENCES:
     for i in xrange(NUMBER_OF_OUTPUT_SENTENCES):
         print sentences[ i ]
+
