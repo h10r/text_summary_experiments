@@ -15,36 +15,11 @@ NUMBER_OF_OUTPUT_SENTENCES = 10
 ### Functions
 
 def most_important(G):
-    #ranking = nx.betweenness_centrality(G, weight="word2vec").items()
-    ranking = nx.pagerank_numpy(G, weight="word2vec", alpha=0.9).items()
+    ranking = nx.pagerank_numpy(G, alpha=0.9).items()
     ranking = sorted(ranking, key=lambda r: r[1], reverse=True)
     return ranking
 
 model = word2vec.Word2Vec.load_word2vec_format('data/vectors.bin', binary=True)
-
-def calc_weight(v1, v2):
-    if not v1 in model or not v2 in model:
-        return 0.0
-    else:
-        """ calculate the real weight """
-        return word2vec_cosine_similarity( v1, v2 )
-
-    return 1.0
-
-def word2vec_cosine_similarity(v1, v2):
-    """
-    Compute cosine similarity between two words.
-
-    Example::
-
-      >>> trained_model.similarity('woman', 'man')
-      0.73723527
-
-      >>> trained_model.similarity('woman', 'woman')
-      1.0
-
-    """
-    return np.dot( model[ v1 ], model[ v2 ].T ) / np.linalg.norm(model[ v1 ]) / np.linalg.norm(model[ v2 ])
 
 def use_lemmatizer():
     lmtzr = WordNetLemmatizer()
@@ -83,7 +58,7 @@ for index in xrange(len(article_tokens)-1):
         current_word = article_tokens[ index ]
         next_word = article_tokens[ index + 1 ]
 
-        G.add_edge( current_word, next_word, word2vec = calc_weight(current_word, next_word) )
+        G.add_edge( current_word, next_word )
     else:
         previous_word = current_word
         current_word = next_word
@@ -91,10 +66,10 @@ for index in xrange(len(article_tokens)-1):
 
         #print previous_word, current_word, next_word
 
-        G.add_edge( previous_word, current_word, word2vec = calc_weight(previous_word, current_word)  )
-        G.add_edge( current_word, next_word, word2vec = calc_weight(current_word, next_word)  )
+        G.add_edge( previous_word, current_word )
+        G.add_edge( current_word, next_word )
         
-        G.add_edge( previous_word, next_word, word2vec = calc_weight(previous_word, next_word)  )
+        G.add_edge( previous_word, next_word )
 
 print "*** => ", abs(ttime-time.clock())
 print "*** Rank words"
