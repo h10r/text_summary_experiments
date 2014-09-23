@@ -19,7 +19,7 @@ def most_important(G):
     the most important nodes
     according to the pagerank """ 
 
-    ranking = nx.betweenness_centrality(G).items()
+    ranking = nx.betweenness_centrality(G, weight="word2vec").items()
     ranking = sorted(ranking, key=lambda r: r[1], reverse=True)
 
     return ranking
@@ -107,7 +107,7 @@ for index in xrange(len(article_tokens)-1):
         current_word = article_tokens[ index ]
         next_word = article_tokens[ index + 1 ]
 
-        G.add_edge( current_word, next_word, weight = calc_weight(current_word, next_word) )
+        G.add_edge( current_word, next_word, word2vec = calc_weight(current_word, next_word) )
     else:
         previous_word = current_word
         current_word = next_word
@@ -115,10 +115,10 @@ for index in xrange(len(article_tokens)-1):
 
         #print previous_word, current_word, next_word
 
-        G.add_edge( previous_word, current_word, weight = calc_weight(previous_word, current_word)  )
-        G.add_edge( current_word, next_word, weight = calc_weight(current_word, next_word)  )
+        G.add_edge( previous_word, current_word, word2vec = calc_weight(previous_word, current_word)  )
+        G.add_edge( current_word, next_word, word2vec = calc_weight(current_word, next_word)  )
         
-        G.add_edge( previous_word, next_word, weight = calc_weight(previous_word, next_word)  )
+        G.add_edge( previous_word, next_word, word2vec = calc_weight(previous_word, next_word)  )
 
 print "*** => ", abs(ttime-time.clock())
 print "*** Rank words"
