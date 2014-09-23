@@ -10,39 +10,15 @@ from nltk.stem.wordnet import WordNetLemmatizer
 import nltk.data
 
 NUMBER_OF_RANKED_WORDS = 42
-NUMBER_OF_OUTPUT_SENTENCES = 5
+NUMBER_OF_OUTPUT_SENTENCES = 10
 
 ### Functions
 
 def most_important(G):
-    """ returns a copy of G with
-    the most important nodes
-    according to the pagerank """ 
-
-    ranking = nx.betweenness_centrality(G, weight="word2vec").items()
+    #ranking = nx.betweenness_centrality(G, weight="word2vec").items()
+    ranking = nx.pagerank_numpy(G, weight="word2vec", alpha=0.9).items()
     ranking = sorted(ranking, key=lambda r: r[1], reverse=True)
-
     return ranking
-
-def pagerank(G):
-    """ returns a copy of G with
-    the most important nodes
-    according to the pagerank """ 
-
-    ranking = nx.betweenness_centrality(G).items()
-    #print ranking
-    
-    r = [x[1] for x in ranking]
-    m = sum(r)/len(r) # mean centrality
-    t = m * 3 # threshold, we keep only the nodes with 3 times the mean
-
-    Gt = G.copy()
-
-    for k, v in ranking:
-        if v < t:
-            Gt.remove_node(k)
-            print v
-    return Gt
 
 model = word2vec.Word2Vec.load_word2vec_format('data/vectors.bin', binary=True)
 
@@ -91,7 +67,7 @@ with open('data/input/pulman2.txt', 'r') as f:
 
     article_tokens = article.split()
 
-G = nx.Graph()
+G = nx.DiGraph()
 
 print "*** Generate graph"
 ttime = time.clock()
@@ -174,5 +150,5 @@ ttime = time.clock()
 
 if len(sorted_sentence_points) >= NUMBER_OF_OUTPUT_SENTENCES:
     for i in xrange(NUMBER_OF_OUTPUT_SENTENCES):
-        print sentences[ i ]
+        print i, ":", sentences[ i ]
 
